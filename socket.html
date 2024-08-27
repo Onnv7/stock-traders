@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Demo</title>
+  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
+</head>
+
+<body>
+  <h1>WebSocket Demo</h1>
+  <div id="messages"></div>
+  <script>
+    // Kết nối đến WebSocket server
+    const socket = io('http://localhost:3001'); // Thay đổi URL nếu cần thiết
+
+    // Gửi yêu cầu đăng ký khi client kết nối
+
+
+    // Lắng nghe sự kiện 'welcome' từ server
+    socket.on('new_stock', (data) => {
+      console.log(data.data);
+      document.getElementById('messages').innerHTML += `<p>${data.data}</p>`;
+    });
+
+    // Lắng nghe dữ liệu chứng khoán từ server
+  </script>
+</body>
+
+</html>

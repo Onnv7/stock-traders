@@ -1,0 +1,82 @@
+version: "3"
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    links:
+      - zookeeper:zookeeper
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+  api-gateway:
+    image: on611/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:80"
+    environment:
+      NODE_ENV: prod
+      STOCK_PROCESSING_HOST: stock-processing-service
+      STOCK_PROCESSING_PORT: 3002
+    depends_on:
+      - stock-fetch-service
+      - stock-processing-service
+      - stock-socket-service
+  stock-fetch-service:
+    image: on611/stock-fetch-service
+    container_name: stock-fetch-service
+    environment:
+      NODE_ENV: prod
+    depends_on:
+      - kafka
+  stock-processing-service:
+    image: on611/stock-processing-service
+    build:
+      context: ./stock-processing-svc
+      dockerfile: Dockerfile
+    container_name: stock-processing-service
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: prod
+      STOCK_PROCESSING_HOST: stock-processing-service
+      STOCK_PROCESSING_PORT: 3002
+    depends_on:
+      - kafka
+  stock-socket-service:
+    image: on611/stock-socket-service
+    build:
+      context: ./stock-socket-svc
+      dockerfile: Dockerfile
+    container_name: stock-socket-service
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: prod
+      SOCKET_PORT: 3001
+    depends_on:
+      - kafka
+  stock-tracking-web:
+    image: on611/stock-tracking-service
+    build:
+      context: ./stock-tracking
+      dockerfile: Dockerfile
+    container_name: stock-tracking-web
+    ports:
+      - "3009:3006"
+    environment:
+      VITE_API_PORT: 8080
